@@ -8,7 +8,7 @@ import json
 import re
 
 '''
-https://github.com/Androsh7/python_web_scraper
+https://github.com/Androsh7/Automated_Threat_Feed
 
 MIT License
 
