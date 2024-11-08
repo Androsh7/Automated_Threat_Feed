@@ -38,19 +38,19 @@ def remove_html_tags(text):
     return re.sub(pattern, '', text)
 
 # this is a list of all urls to be searched along with the required XML locations
-# format: url, news_block_location, news_title_location, news_link_location, news_pub_date_location, news_pub_date_format
 urllist = [
     'https://thehackernews.com/news-sitemap.xml',
     'https://cyberscoop.com/post-sitemap7.xml',
 ]
 
 
-news_cutoff = datetime.now() - timedelta(hours= 24)
+news_cutoff = datetime.now() - timedelta(hours= 8) # Tweak this figure to adjust the recency of the threat feed
 tz = pytz.timezone('America/Los_Angeles')
 
 # this iterates through the urllist and grabs all links for sites within the cuttoff time
 link_list = []
 
+# collects all article links from urllist
 for news_site in urllist:
     r = requests.get(news_site)
     xml = r.text
@@ -62,6 +62,7 @@ for news_site in urllist:
         print("ERROR GRABBING SITE BLOCKS, ABORTING OPERATION")
         continue
     
+    link_count = 0
     for link in xml_soup:
         # grab url
         try:
@@ -90,31 +91,51 @@ for news_site in urllist:
             continue
         
         link_list.append([linkstr, linkdate, linktitle])
-for line in link_list:
-    print(line)
+        link_count += 1
+    print("Found", link_count, "articles on", news_site)
+
+# quit if no articles found
+if len(link_list) == 0:
+    print("No articles found, aborting")
+    exit()
 
 # this grabs the body of the article and adds it to the link list
-for link in link_list:
-    html = requests.get(link[0], allow_redirects=True)
-    soup = BeautifulSoup(html.content, "html.parser")
-    raw_data = soup.find_all("p")
-    
-    # remove html tags
-    stripped_html = remove_html_tags(str(raw_data))
+link_count = 1
+with open("current_threat_feed.txt", "w") as file:
+    for link in link_list:
+        print("Summarizing article {}/{}".format(link_count, len(link_list)))
+        html = requests.get(link[0], allow_redirects=True)
+        soup = BeautifulSoup(html.content, "html.parser") # this gives a warning that should be ignored
+        raw_data = soup.find_all("p") # this grabs all of the html with the <p> </p> tag, essentially the meat and potatoes of the article
+        
+        # remove html tags
+        stripped_html = remove_html_tags(str(raw_data))
 
-    payload = {
-        "prompt" : stripped_html + ". Summary of the article that is a MAXIMUM of 3 sentences:",
-        "temperature" : 0.2,
-        "top_p" : 0.9,
-        "max_content_length" : 2048,
-        "max_length" : 256,
-        "n" : 1,
-    }
-    #print(payload)
-    r = requests.post('http://localhost:5001/api/v1/generate', data=json.dumps(payload))
-    print('-' * 10, link[2], "-" , link[1])
-    json_data = r.json()
-    link.append(json_data["results"][0]["text"].lstrip(", ["))
-    print(link[3], "\n")
-
-# this will write the automated threat feed to a file
+        # NOTE: this uses the KoboldCpp to run model and Kobold API for summarization
+        # see KoboldCpp at https://github.com/LostRuins/koboldcpp
+        # see KoboldCpp web API at https://lite.koboldai.net/koboldcpp_api
+        # uses the unsloth.Q4_K_M.gguf model from https://huggingface.co/raaec/llama3.1-8b-instruct-summarize-q4_k_m
+        payload = {
+            "prompt" : stripped_html + ". Summary of the article that is a MAXIMUM of 3 sentences:", # this is the actual AI prompt, adjust as needed
+            "temperature" : 0.2,
+            "top_p" : 0.9,
+            "max_content_length" : 2048,
+            "max_length" : 256,
+            "n" : 1,
+        }
+        #print(payload)
+        try:
+            r = requests.post('http://localhost:5001/api/v1/generate', data=json.dumps(payload))
+        except:
+            print("CRITICAL ERROR REACHING LLM at http://localhost:5001/api/v1/generate")
+            exit()
+        json_data = r.json()
+        link.append(json_data["results"][0]["text"].strip(", [].")) # mostly formatting here since the Kobold API returns a lot of json with response parameters
+        
+        # print the summaries live
+        #print('-' * 10, link[2], "-" , link[1])
+        #print(link[3], "\n")
+        
+        file.write("{} - {}\n\n{}\n{}\n".format(link[2], link[1], link[3], link[0]) + "-" * 20 + "\n") # formatting for output
+        link_count += 1
+print("Finished writing" + str(link_count) + "Summaries to" + "current_threat_feed.txt")
