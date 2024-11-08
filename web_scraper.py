@@ -45,7 +45,7 @@ urllist = [
 ]
 
 
-news_cutoff = datetime.now() - timedelta(hours= 8)
+news_cutoff = datetime.now() - timedelta(hours= 24)
 tz = pytz.timezone('America/Los_Angeles')
 
 # this iterates through the urllist and grabs all links for sites within the cuttoff time
@@ -89,31 +89,10 @@ for news_site in urllist:
         if (pub_date_std.astimezone(tz) < news_cutoff.astimezone(tz)):
             continue
         
-        link_list.append({"link" : linkstr, "date" : linkdate, "title" : linktitle})
+        link_list.append([linkstr, linkdate, linktitle])
 for line in link_list:
     print(line)
-'''for news_site in urllist:
-    response = requests.get(news_site[0])
-    xml = response.text
-    root = ET.fromstring(xml)
-    for child in root.findall(news_site[1]):
-        pub_date = child.find(news_site[4]).text # gets the publication date for the article
-        pub_date_std = datetime.strptime(pub_date, news_site[5]) # converts date format to datetime object
-        
-        # quits if news is past cutoff date
-        if (pub_date_std.astimezone(tz) < news_cutoff.astimezone(tz)):
-            continue
-        
-        url = child.find(news_site[3]).text # gets the url for the article
-        
-        if (news_site[2] == "NONE"):
-            title = url.split("/")[-2]
-        else:
-            title = child.find(news_site[2]).text # gets the title for the article    
-        
-        link_list.append([url, title, pub_date]) # adds the url, title, pubdate to the link_list
-print(link_list)'''
-exit()
+
 # this grabs the body of the article and adds it to the link list
 for link in link_list:
     html = requests.get(link[0], allow_redirects=True)
@@ -133,8 +112,9 @@ for link in link_list:
     }
     #print(payload)
     r = requests.post('http://localhost:5001/api/v1/generate', data=json.dumps(payload))
-    print('-' * 10, link[1], "-" , link[2])
+    print('-' * 10, link[2], "-" , link[1])
     json_data = r.json()
     link.append(json_data["results"][0]["text"].lstrip(", ["))
+    print(link[3], "\n")
 
 # this will write the automated threat feed to a file
