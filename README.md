@@ -85,4 +85,4 @@ the program currently writes all of this information to a file "current_threat_f
 ## Limitations
 This program relies on a machine that can run an LLM locally, which generally means a graphics card with at least 4gb of VRAM. I personally ran this on a laptop NVIDIA GeForce RTX 3050 6GB. For reference this was able to summarize 6 articles in 3 minutes and 50 seconds. Your mileage may vary when it comes to other devices, as always a less-quantized model will assist in better summarization and allow for more complex instructions.
 
-This program currently suffers from issues with duplicate articles since some of the cybernews sites will write articles on the same topic. This can be solved be running the whole summary through the LLM again to condense it further, though this may result in lose of content or other unintended issues.
+This program currently suffers from issues with duplicate articles since some of the cybernews sites will write articles on the same topic. This can be solved by running the whole summary through the LLM again to condense it further, though this may result in lose of content or other unintended issues.
