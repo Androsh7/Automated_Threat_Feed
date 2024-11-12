@@ -51,7 +51,7 @@ Then the news_cutoff is compared to the last modified date of each article to de
       continue
 ```
 ### Step 4 grab the article text
-Before the LLM model can begin to read the article it most get it in a simplified format (no HTML syntax). This is done by isolating only the html <p> tags. This is an imperfect solution, however it succeeds in grabbing more than enough data for the LLM to process.
+Before the LLM model can begin to read the article it most get it in a simplified format (no HTML syntax). This is done by isolating only the html \<p\> tags. This is an imperfect solution, however it succeeds in grabbing more than enough data for the LLM to process.
 ```
 html = requests.get(link[0], allow_redirects=True)
 soup = BeautifulSoup(html.content, "html.parser") # this gives a warning that should be ignored
